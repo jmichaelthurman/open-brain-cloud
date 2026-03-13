@@ -32,8 +32,8 @@ import 'dotenv/config';
 const { Pool } = pg;
 
 const DRY_RUN = process.argv.includes('--dry-run');
-const BATCH_SIZE = 10;
-const BATCH_DELAY_MS = 200;
+const BATCH_SIZE = 1;         // serialize — restore to 10 once Voyage payment propagates
+const BATCH_DELAY_MS = 21000; // 21s between requests to stay under 3 RPM
 const ID_MAP_FILE = 'backfill_id_map.json';
 
 interface OldThought {
@@ -76,6 +76,20 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// pg's URL parser truncates usernames at '.', so we parse the URL manually
+// and pass individual connection params to avoid the issue entirely.
+function parseUrl(url: string): pg.PoolConfig {
+  const u = new URL(url);
+  return {
+    host: u.hostname,
+    port: parseInt(u.port, 10),
+    user: decodeURIComponent(u.username),
+    password: decodeURIComponent(u.password),
+    database: u.pathname.slice(1),
+    ssl: { rejectUnauthorized: false },
+  };
+}
+
 async function main() {
   const oldUrl = process.env.OLD_DATABASE_URL;
   const newUrl = process.env.DATABASE_URL;
@@ -83,7 +97,7 @@ async function main() {
   if (!newUrl) throw new Error('DATABASE_URL is required');
 
   const oldPool = new Pool({ connectionString: oldUrl });
-  const newPool = new Pool({ connectionString: newUrl, ssl: { rejectUnauthorized: false } });
+  const newPool = new Pool(parseUrl(newUrl));
 
   console.log(`Mode: ${DRY_RUN ? 'DRY RUN' : 'LIVE'}`);
   console.log('Fetching thoughts from local database...');

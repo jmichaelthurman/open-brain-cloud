@@ -5,13 +5,24 @@ const { Pool } = pg;
 
 let _pool: pg.Pool | null = null;
 
+// pg's URL parser truncates usernames at '.', so we parse manually
+// and pass individual connection params to avoid the issue entirely.
+function parseDbUrl(url: string): pg.PoolConfig {
+  const u = new URL(url);
+  return {
+    host: u.hostname,
+    port: parseInt(u.port, 10),
+    user: decodeURIComponent(u.username),
+    password: decodeURIComponent(u.password),
+    database: u.pathname.slice(1),
+    ssl: { rejectUnauthorized: false },
+  };
+}
+
 export function getPool(): pg.Pool {
   if (!_pool) {
     if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required');
-    _pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
-    });
+    _pool = new Pool(parseDbUrl(process.env.DATABASE_URL));
   }
   return _pool;
 }
