@@ -10,9 +10,9 @@
  *   "mcpServers": {
  *     "open-brain": {
  *       "command": "node",
- *       "args": ["/Users/jmichaelthurman/src/open-brain-cloud/proxy/dist/stdio-proxy.js"],
+ *       "args": ["/path/to/open-brain-cloud/proxy/dist/stdio-proxy.js"],
  *       "env": {
- *         "OPEN_BRAIN_API_KEY": "REDACTED_API_KEY",
+ *         "OPEN_BRAIN_API_KEY": "<your-OPEN_BRAIN_API_KEY>",
  *         "OPEN_BRAIN_URL": "https://open-brain-cloud.fly.dev/mcp"
  *       }
  *     }
