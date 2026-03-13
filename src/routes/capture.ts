@@ -2,18 +2,59 @@ import http from 'node:http';
 import { embed } from '../services/voyage.js';
 import { extractMetadata } from '../services/openrouter.js';
 import { insertThought, searchByEmbedding } from '../services/db.js';
+import type { SuggestedLink } from '../types.js';
+
+const MAX_BODY_BYTES = 1_048_576; // 1 MB
+const MAX_CONTENT_LENGTH = 50_000;
+const MAX_ARRAY_LENGTH = 50;
+const MAX_ELEMENT_LENGTH = 500;
 
 function readBody(req: http.IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     let data = '';
-    req.on('data', (chunk) => { data += chunk; });
+    let size = 0;
+    req.on('data', (chunk: Buffer) => {
+      size += chunk.length;
+      if (size > MAX_BODY_BYTES) {
+        req.destroy();
+        reject(Object.assign(new Error('Payload too large'), { statusCode: 413 }));
+        return;
+      }
+      data += chunk;
+    });
     req.on('end', () => resolve(data));
     req.on('error', reject);
   });
 }
 
+function boundedStrings(arr: unknown): string[] | undefined {
+  if (!Array.isArray(arr)) return undefined;
+  return (arr as unknown[])
+    .filter((v): v is string => typeof v === 'string')
+    .slice(0, MAX_ARRAY_LENGTH)
+    .map((v) => v.slice(0, MAX_ELEMENT_LENGTH));
+}
+
 export async function handleRestCapture(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
-  const raw = await readBody(req);
+  const requestId = Math.random().toString(36).slice(2, 10);
+  const start = Date.now();
+
+  const contentType = req.headers['content-type'] ?? '';
+  if (!contentType.startsWith('application/json')) {
+    res.writeHead(415, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Content-Type must be application/json' }));
+    return;
+  }
+
+  let raw: string;
+  try {
+    raw = await readBody(req);
+  } catch (err: unknown) {
+    const status = (err as { statusCode?: number }).statusCode ?? 400;
+    res.writeHead(status, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: status === 413 ? 'Payload too large' : 'Failed to read body' }));
+    return;
+  }
 
   let body: unknown;
   try {
@@ -39,10 +80,18 @@ export async function handleRestCapture(req: http.IncomingMessage, res: http.Ser
     return;
   }
 
-  const source = typeof input['source'] === 'string' ? input['source'] : 'ios-shortcut';
-  const people = Array.isArray(input['people']) ? (input['people'] as string[]).filter((v) => typeof v === 'string') : undefined;
-  const topics = Array.isArray(input['topics']) ? (input['topics'] as string[]).filter((v) => typeof v === 'string') : undefined;
-  const action_items = Array.isArray(input['action_items']) ? (input['action_items'] as string[]).filter((v) => typeof v === 'string') : undefined;
+  if (content.length > MAX_CONTENT_LENGTH) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: `content exceeds ${MAX_CONTENT_LENGTH} character limit` }));
+    return;
+  }
+
+  const source = typeof input['source'] === 'string' ? input['source'] : 'rest-api';
+  const people = boundedStrings(input['people']);
+  const topics = boundedStrings(input['topics']);
+  const action_items = boundedStrings(input['action_items']);
+
+  console.log(JSON.stringify({ requestId, event: 'capture_start', source, contentLength: content.length }));
 
   const [embedding, extracted] = await Promise.all([
     embed(content),
@@ -56,23 +105,21 @@ export async function handleRestCapture(req: http.IncomingMessage, res: http.Ser
     return [...base, ...deduped];
   };
 
-  const mergedPeople = merge(people, extracted.people);
-  const mergedTopics = merge(topics, extracted.topics);
-  const mergedActions = merge(action_items, extracted.action_items);
-
   const id = await insertThought({
     content,
     embedding,
-    people: mergedPeople,
-    topics: mergedTopics,
-    action_items: mergedActions,
+    people: merge(people, extracted.people),
+    topics: merge(topics, extracted.topics),
+    action_items: merge(action_items, extracted.action_items),
     source,
   });
 
   const similar = await searchByEmbedding(embedding, 5, 0.5);
-  const suggested_links = similar
+  const suggested_links: SuggestedLink[] = similar
     .filter((r) => r.id !== id)
     .map((r) => ({ thought_id: r.id, content: r.content, similarity: r.similarity }));
+
+  console.log(JSON.stringify({ requestId, event: 'capture_ok', id, durationMs: Date.now() - start }));
 
   res.writeHead(200, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ id, suggested_links }));
