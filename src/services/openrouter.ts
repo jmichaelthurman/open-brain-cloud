@@ -27,7 +27,7 @@ export async function extractMetadata(content: string): Promise<ExtractedMetadat
         'HTTP-Referer': 'https://github.com/jmichaelthurman/open-brain-cloud',
       },
       body: JSON.stringify({
-        model: 'anthropic/claude-haiku-4',
+        model: 'anthropic/claude-haiku-4-5',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content },

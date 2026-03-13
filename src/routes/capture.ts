@@ -40,11 +40,6 @@ export async function handleRestCapture(req: http.IncomingMessage, res: http.Ser
   const start = Date.now();
 
   const contentType = req.headers['content-type'] ?? '';
-  if (!contentType.startsWith('application/json')) {
-    res.writeHead(415, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Content-Type must be application/json' }));
-    return;
-  }
 
   let raw: string;
   try {
@@ -56,22 +51,31 @@ export async function handleRestCapture(req: http.IncomingMessage, res: http.Ser
     return;
   }
 
-  let body: unknown;
-  try {
-    body = JSON.parse(raw);
-  } catch {
-    res.writeHead(400, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Invalid JSON' }));
+  let input: Record<string, unknown>;
+
+  if (contentType.startsWith('application/json')) {
+    let body: unknown;
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Invalid JSON' }));
+      return;
+    }
+    if (typeof body !== 'object' || body === null) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Request body must be a JSON object' }));
+      return;
+    }
+    input = body as Record<string, unknown>;
+  } else if (contentType.startsWith('application/x-www-form-urlencoded')) {
+    const params = new URLSearchParams(raw);
+    input = Object.fromEntries(params.entries());
+  } else {
+    res.writeHead(415, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Content-Type must be application/json or application/x-www-form-urlencoded' }));
     return;
   }
-
-  if (typeof body !== 'object' || body === null) {
-    res.writeHead(400, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Request body must be a JSON object' }));
-    return;
-  }
-
-  const input = body as Record<string, unknown>;
   const content = input['content'];
 
   if (typeof content !== 'string' || content.trim() === '') {
