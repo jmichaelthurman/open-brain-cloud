@@ -3,6 +3,7 @@ import http from 'node:http';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { validateApiKey } from './auth.js';
 import { createServer } from './server.js';
+import { handleRestCapture } from './routes/capture.js';
 
 const PORT = parseInt(process.env.PORT ?? '8080', 10);
 
@@ -28,6 +29,23 @@ const httpServer = http.createServer((req, res) => {
     const server = createServer();
     server.connect(transport).then(() => transport.handleRequest(req, res)).catch((err: unknown) => {
       console.error('MCP transport error:', err);
+      if (!res.headersSent) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Internal server error' }));
+      }
+    });
+    return;
+  }
+
+  // Simple REST capture (for Apple Shortcuts, webhooks, etc.)
+  if (req.method === 'POST' && url === '/capture') {
+    if (!validateApiKey(req)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Unauthorized' }));
+      return;
+    }
+    handleRestCapture(req, res).catch((err: unknown) => {
+      console.error('REST capture error:', err);
       if (!res.headersSent) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Internal server error' }));
