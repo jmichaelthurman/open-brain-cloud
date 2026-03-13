@@ -66,12 +66,33 @@ PORT=8080
 
 ### 4. Deploy to Fly.io
 
+```env
+
+```
+
 ```bash
 fly auth login
 fly apps create open-brain-cloud   # or your chosen app name
 
 # Set secrets
 fly secrets set \
+  DATABASE_URL="..." \
+  OPEN_BRAIN_API_KEY="..." \
+  VOYAGE_API_KEY="..." \
+  OPENROUTER_API_KEY="..."
+
+fly deploy
+```
+
+```bash
+
+```
+
+```bash
+
+```
+
+```bash
   DATABASE_URL="..." \
   OPEN_BRAIN_API_KEY="..." \
   VOYAGE_API_KEY="..." \
@@ -160,7 +181,7 @@ Create a typed directional link between two thoughts.
 | `relation` | enum | ✓ | See relation types below |
 | `note` | string | | Optional edge annotation |
 
-**Relation types:** `related` · `supports` · `contradicts` · `follows_from` · `part_of` · `example_of` · `references`
+__Relation types:__ `related` · `supports` · `contradicts` · `follows_from` · `part_of` · `example_of` · `references`
 
 ---
 
@@ -218,7 +239,7 @@ The script batches in groups of 10 with a 200ms delay to respect Voyage rate lim
 
 ## Architecture
 
-```
+```ini
 MCP Clients (Claude Code · claude.ai desktop · claude.ai mobile)
         │
         │  HTTPS  Authorization: Bearer $OPEN_BRAIN_API_KEY

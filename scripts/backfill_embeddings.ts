@@ -32,8 +32,8 @@ import 'dotenv/config';
 const { Pool } = pg;
 
 const DRY_RUN = process.argv.includes('--dry-run');
-const BATCH_SIZE = 1;         // serialize — restore to 10 once Voyage payment propagates
-const BATCH_DELAY_MS = 21000; // 21s between requests to stay under 3 RPM
+const BATCH_SIZE = 10;
+const BATCH_DELAY_MS = 200;
 const ID_MAP_FILE = 'backfill_id_map.json';
 
 interface OldThought {
