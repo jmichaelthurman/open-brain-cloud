@@ -1,15 +1,32 @@
 /**
  * backfill_embeddings.ts
  *
- * Migrates thoughts from the old local Postgres to Supabase,
- * re-embedding each with Voyage AI voyage-3-lite (vector(512)).
+ * Migrates thoughts from the local open-brain Postgres (BIGSERIAL ids, vector(768))
+ * to Supabase (UUID ids, vector(512)), re-embedding each with Voyage AI voyage-3-lite.
  *
  * Usage:
- *   OLD_DATABASE_URL=postgresql://... DATABASE_URL=postgresql://... \
- *   VOYAGE_API_KEY=... tsx scripts/backfill_embeddings.ts [--dry-run]
+ *   # 1. Make sure local Docker DB is running:
+ *   #    cd ~/.open-brain && docker compose up -d postgres
+ *
+ *   # 2. Find your POSTGRES_PASSWORD:
+ *   #    cat ~/.open-brain/.env
+ *
+ *   # 3. Dry run first:
+ *   OLD_DATABASE_URL="postgresql://openbrain:<password>@localhost:5432/openbrain" \
+ *   tsx scripts/backfill_embeddings.ts --dry-run
+ *
+ *   # 4. Run for real:
+ *   OLD_DATABASE_URL="postgresql://openbrain:<password>@localhost:5432/openbrain" \
+ *   tsx scripts/backfill_embeddings.ts
+ *
+ * Notes:
+ *   - Old ids are BIGSERIAL integers — new UUIDs are generated fresh.
+ *   - A mapping file (backfill_id_map.json) is written so you can trace old→new ids.
+ *   - Idempotent: re-running skips already-migrated thoughts (matched by content + created_at).
  */
 
 import pg from 'pg';
+import fs from 'node:fs';
 import 'dotenv/config';
 
 const { Pool } = pg;
@@ -17,9 +34,10 @@ const { Pool } = pg;
 const DRY_RUN = process.argv.includes('--dry-run');
 const BATCH_SIZE = 10;
 const BATCH_DELAY_MS = 200;
+const ID_MAP_FILE = 'backfill_id_map.json';
 
 interface OldThought {
-  id: string;
+  id: string;           // BIGSERIAL — comes back as string from pg
   content: string;
   people: string[];
   topics: string[];
@@ -67,14 +85,21 @@ async function main() {
   const oldPool = new Pool({ connectionString: oldUrl });
   const newPool = new Pool({ connectionString: newUrl, ssl: { rejectUnauthorized: false } });
 
-  console.log(`DRY RUN: ${DRY_RUN}`);
-  console.log('Fetching thoughts from old database...');
+  console.log(`Mode: ${DRY_RUN ? 'DRY RUN' : 'LIVE'}`);
+  console.log('Fetching thoughts from local database...');
 
   const { rows: thoughts } = await oldPool.query<OldThought>(
-    'SELECT id, content, people, topics, action_items, source, created_at FROM thoughts ORDER BY created_at ASC'
+    `SELECT id, content, people, topics, action_items, source, created_at
+     FROM thoughts
+     ORDER BY created_at ASC`
   );
 
   console.log(`Found ${thoughts.length} thoughts to migrate.\n`);
+
+  // Load existing id map if present (for idempotency)
+  const idMap: Record<string, string> = fs.existsSync(ID_MAP_FILE)
+    ? (JSON.parse(fs.readFileSync(ID_MAP_FILE, 'utf8')) as Record<string, string>)
+    : {};
 
   let migrated = 0;
   let skipped = 0;
@@ -86,8 +111,15 @@ async function main() {
     await Promise.all(
       batch.map(async (thought) => {
         try {
+          // Skip if already migrated (id present in map)
+          if (idMap[thought.id]) {
+            if (DRY_RUN) console.log(`[dry-run] Already migrated: old_id=${thought.id} → ${idMap[thought.id]}`);
+            skipped++;
+            return;
+          }
+
           if (DRY_RUN) {
-            console.log(`[dry-run] Would migrate: ${thought.id} — ${thought.content.slice(0, 60)}...`);
+            console.log(`[dry-run] Would migrate: old_id=${thought.id} — ${thought.content.slice(0, 60)}...`);
             migrated++;
             return;
           }
@@ -95,12 +127,11 @@ async function main() {
           const embedding = await embedText(thought.content);
           const vectorLiteral = `[${embedding.join(',')}]`;
 
-          await newPool.query(
-            `INSERT INTO thoughts (id, content, embedding, people, topics, action_items, source, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-             ON CONFLICT (id) DO NOTHING`,
+          const { rows } = await newPool.query<{ id: string }>(
+            `INSERT INTO thoughts (content, embedding, people, topics, action_items, source, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
+             RETURNING id`,
             [
-              thought.id,
               thought.content,
               vectorLiteral,
               thought.people,
@@ -110,15 +141,23 @@ async function main() {
               thought.created_at,
             ]
           );
+
+          const newId = rows[0].id;
+          idMap[thought.id] = newId;
           migrated++;
         } catch (err) {
-          console.error(`Failed to migrate ${thought.id}:`, err);
+          console.error(`Failed to migrate old_id=${thought.id}:`, err);
           failed++;
         }
       })
     );
 
     console.log(`Progress: ${Math.min(i + BATCH_SIZE, thoughts.length)}/${thoughts.length} processed`);
+
+    // Persist id map after each batch (crash safety)
+    if (!DRY_RUN) {
+      fs.writeFileSync(ID_MAP_FILE, JSON.stringify(idMap, null, 2));
+    }
 
     if (i + BATCH_SIZE < thoughts.length) {
       await sleep(BATCH_DELAY_MS);
@@ -130,9 +169,13 @@ async function main() {
 
   console.log('\n=== Backfill Summary ===');
   console.log(`Migrated: ${migrated}`);
-  console.log(`Skipped:  ${skipped}`);
+  console.log(`Skipped (already done): ${skipped}`);
   console.log(`Failed:   ${failed}`);
-  if (DRY_RUN) console.log('(DRY RUN — no changes written)');
+  if (!DRY_RUN && migrated > 0) {
+    console.log(`\nID map written to: ${ID_MAP_FILE}`);
+    console.log('Keep this file — it maps old BIGSERIAL ids to new UUIDs.');
+  }
+  if (DRY_RUN) console.log('\n(DRY RUN — no changes written)');
 }
 
 main().catch((err) => {
