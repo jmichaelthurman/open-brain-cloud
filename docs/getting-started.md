@@ -138,7 +138,30 @@ Add to `.mcp.json` in your project root, or to `~/.claude/mcp.json` for global a
 
 ### Claude Desktop
 
-Add the same block to `~/.claude/claude_desktop_config.json`.
+Claude Desktop only supports stdio MCP servers, not HTTP. Use the bundled `proxy/stdio-proxy.ts` bridge, which forwards stdio ↔ remote HTTP:
+
+```json
+{
+  "mcpServers": {
+    "open-brain": {
+      "command": "/path/to/node",
+      "args": ["/path/to/open-brain-cloud/proxy/dist/stdio-proxy.js"],
+      "env": {
+        "OPEN_BRAIN_API_KEY": "<your-OPEN_BRAIN_API_KEY>",
+        "OPEN_BRAIN_URL": "https://open-brain-cloud.fly.dev/mcp"
+      }
+    }
+  }
+}
+```
+
+Replace `/path/to/node` with the absolute path to your Node.js binary (e.g., `~/.asdf/installs/nodejs/22.2.0/bin/node`). Claude Desktop uses a stripped PATH — asdf/nvm shims are not visible; you must use the absolute install path.
+
+Compile the proxy first if you have not already:
+
+```bash
+cd proxy && npm install && npx tsc
+```
 
 ### claude.ai (browser and mobile)
 

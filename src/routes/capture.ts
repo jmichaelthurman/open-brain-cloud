@@ -67,7 +67,7 @@ export async function handleRestCapture(req: http.IncomingMessage, res: http.Ser
 
   if (typeof body !== 'object' || body === null) {
     res.writeHead(400, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'content is required' }));
+    res.end(JSON.stringify({ error: 'Request body must be a JSON object' }));
     return;
   }
 

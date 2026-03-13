@@ -41,8 +41,8 @@ echo "  To apply immediately: fly secrets deploy --app ${FLY_APP}"
 echo "→ Updating ${ENV_FILE}..."
 if [[ -f "${ENV_FILE}" ]]; then
   if grep -q "^OPEN_BRAIN_API_KEY=" "${ENV_FILE}"; then
-    # Replace existing line in-place
-    sed -i '' "s|^OPEN_BRAIN_API_KEY=.*|OPEN_BRAIN_API_KEY=${NEW_KEY}|" "${ENV_FILE}"
+    # Replace existing line in-place (portable: works on macOS and Linux)
+    sed -i.bak "s|^OPEN_BRAIN_API_KEY=.*|OPEN_BRAIN_API_KEY=${NEW_KEY}|" "${ENV_FILE}" && rm -f "${ENV_FILE}.bak"
   else
     # Append if not present
     echo "OPEN_BRAIN_API_KEY=${NEW_KEY}" >> "${ENV_FILE}"
