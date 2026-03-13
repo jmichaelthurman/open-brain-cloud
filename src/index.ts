@@ -2,7 +2,7 @@ import 'dotenv/config';
 import http from 'node:http';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { validateApiKey } from './auth.js';
-import { server } from './server.js';
+import { createServer } from './server.js';
 
 const PORT = parseInt(process.env.PORT ?? '8080', 10);
 
@@ -25,6 +25,7 @@ const httpServer = http.createServer((req, res) => {
     }
 
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    const server = createServer();
     server.connect(transport).then(() => transport.handleRequest(req, res)).catch((err: unknown) => {
       console.error('MCP transport error:', err);
       if (!res.headersSent) {
