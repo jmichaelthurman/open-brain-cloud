@@ -4,15 +4,13 @@ title: Mobile Capture
 permalink: /mobile/
 ---
 
-# Mobile Capture
-
 Open Brain Cloud supports capture from iOS and iPadOS without a dedicated app. The `POST /capture` REST endpoint accepts the same payload as the `capture_thought` MCP tool, making it easy to call from Apple Shortcuts, scripts, or any HTTP client.
 
 ---
 
 ## The `/capture` endpoint
 
-```
+```http
 POST https://open-brain-cloud.fly.dev/capture
 Authorization: Bearer <your-OPEN_BRAIN_API_KEY>
 Content-Type: application/json
@@ -58,7 +56,7 @@ Apple Shortcuts can call `POST /capture` from any app's share sheet or as a home
 There are two shortcuts to build:
 
 | Shortcut | How you use it |
-|----------|---------------|
+| -------- | -------------- |
 | **Save to Open Brain** | Appears in the share sheet of any app; capture highlighted text from Claude.ai, Safari, Mail, Notes, etc. |
 | **Quick Brain Capture** | Home screen icon or widget; tap to type a thought directly |
 
@@ -70,51 +68,41 @@ Open the **Shortcuts** app, tap **+**, and name it **Save to Open Brain**.
 
 Add these action blocks in order:
 
-**1. Receive Input from Share Sheet**
-- Action: "Receive Input from Share Sheet"
-- Input Type: Text
-- If there's no input: Continue (the next block handles the fallback)
+#### Step 1 — Get the shared text
 
-**2. Fallback to Clipboard**
-- Action: If
-- Condition: Shortcut Input → has no value
-- Inside **If**: Get Clipboard → Set Variable "Captured Text" = Clipboard
-- Inside **Otherwise**: Set Variable "Captured Text" = Shortcut Input
-- End If
+- Action: **Get Text from Input**
+- This automatically makes the shortcut appear in the share sheet — no extra configuration needed.
+- Tap the result pill → **Add to Variable** → name it `Captured Text`
 
-**3. Store your API key**
-- Action: Text → paste your API key: `<your-OPEN_BRAIN_API_KEY>`
-- Action: Set Variable "Brain API Key" = the Text block above
+#### Step 2 — Store your API key
 
-**4. Build the Authorization header**
-- Action: Text → type `Bearer ` (with a trailing space), then insert variable **Brain API Key**
-- Action: Set Variable "Auth Header" = the Text block above
+- Action: **Text** → paste your API key: `<your-OPEN_BRAIN_API_KEY>`
+- Tap the result pill → **Add to Variable** → name it `Brain API Key`
 
-**5. Optional context prompt**
-- Action: Ask for Input → Prompt: `Add a quick note? (optional — press Cancel to skip)` → Type: Text
-- Action: If → Ask for Input result has value
-  - Inside **If**: Text → `[Captured Text]\n\n[Ask for Input result]` → Set Variable "Final Content"
-  - Inside **Otherwise**: Set Variable "Final Content" = Captured Text
-- End If
+#### Step 3 — Build the Authorization header
 
-**6. Send to Open Brain Cloud**
-- Action: Get Contents of URL
+- Action: **Text** → type `Bearer ` (with a trailing space), then tap the variable picker and insert **Brain API Key**
+- Tap the result pill → **Add to Variable** → name it `Auth Header`
+
+#### Step 4 — Send to Open Brain Cloud
+
+- Action: **Get Contents of URL**
   - URL: `https://open-brain-cloud.fly.dev/capture`
-  - Method: POST
-  - Request Body: JSON
-  - Fields:
-    - `content` → variable **Final Content**
-    - `source` → text `ios-shortcut`
-  - Headers:
-    - `Authorization` → variable **Auth Header**
-    - `Content-Type` → text `application/json`
+  - Tap **Show More** → Method: **POST**
+  - Request Body: **JSON** → tap **Add new field**:
+    - Key: `content` → Value: variable **Captured Text**
+    - Key: `source` → Value: text `ios-shortcut`
+  - Headers → tap **Add new header**:
+    - Key: `Authorization` → Value: variable **Auth Header**
+    - Key: `Content-Type` → Value: text `application/json`
 
-**7. Success notification**
-- Action: Show Notification
+#### Step 5 — Success notification
+
+- Action: **Show Notification**
   - Title: `Open Brain`
-  - Body: `Saved to Open Brain`
+  - Body: `Saved`
 
-Tap **Done** to save. To add it to your share sheet, open any app's share menu, scroll down, tap **More**, and pin **Save to Open Brain**.
+Tap **Done**. To confirm it appears in the share sheet: open Safari or Notes, select some text, tap the share icon, scroll down — **Save to Open Brain** should appear in the Shortcuts section.
 
 ---
 
@@ -122,36 +110,40 @@ Tap **Done** to save. To add it to your share sheet, open any app's share menu, 
 
 Open the **Shortcuts** app, tap **+**, and name it **Quick Brain Capture**.
 
-**1. Store your API key**
-- Action: Text → `<your-OPEN_BRAIN_API_KEY>`
-- Action: Set Variable "Brain API Key"
+#### Step 1 — Store your API key
 
-**2. Build the Authorization header**
-- Action: Text → `Bearer ` + variable **Brain API Key**
-- Action: Set Variable "Auth Header"
+- Action: **Text** → paste your API key: `<your-OPEN_BRAIN_API_KEY>`
+- Tap the result pill → **Add to Variable** → name it `Brain API Key`
 
-**3. Ask for input**
-- Action: Ask for Input → Prompt: `What's on your mind?` → Type: Text
-- Action: Set Variable "Captured Text" = Provided Input
+#### Step 2 — Build the Authorization header
 
-**4. Send to Open Brain Cloud**
-- Action: Get Contents of URL
+- Action: **Text** → type `Bearer` followed by a single space, then tap the variable picker and insert **Brain API Key**
+- Tap the result pill → **Add to Variable** → name it `Auth Header`
+
+#### Step 3 — Ask for input
+
+- Action: **Ask for Input** → Prompt: `What's on your mind?` → Type: Text
+- Tap the result pill → **Add to Variable** → name it `Captured Text`
+
+#### Step 4 — POST to the capture endpoint
+
+- Action: **Get Contents of URL**
   - URL: `https://open-brain-cloud.fly.dev/capture`
-  - Method: POST
-  - Request Body: JSON
-  - Fields:
-    - `content` → variable **Captured Text**
-    - `source` → text `ios-shortcut`
-  - Headers:
-    - `Authorization` → variable **Auth Header**
-    - `Content-Type` → text `application/json`
+  - Tap **Show More** → Method: **POST**
+  - Request Body: **JSON** → tap **Add new field**:
+    - Key: `content` → Value: variable **Captured Text**
+    - Key: `source` → Value: text `ios-shortcut`
+  - Headers → tap **Add new header**:
+    - Key: `Authorization` → Value: variable **Auth Header**
+    - Key: `Content-Type` → Value: text `application/json`
 
-**5. Success notification**
-- Action: Show Notification
+#### Step 5 — Notify on success
+
+- Action: **Show Notification**
   - Title: `Open Brain`
-  - Body: `Saved to Open Brain`
+  - Body: `Saved`
 
-Tap **Done**. To add as a home screen icon: long-press the shortcut → **Add to Home Screen**. To add as a widget: long-press the home screen → tap **+** → search Shortcuts → choose the widget size → tap **Choose** to select **Quick Brain Capture**.
+Tap **Done**. To add as a home screen icon: long-press the shortcut → **Add to Home Screen**. To add as a widget: long-press the home screen → tap **+** → search Shortcuts → choose the widget size → select **Quick Brain Capture**.
 
 ---
 
@@ -165,17 +157,17 @@ If you build multiple shortcuts and want to rotate the API key from a single loc
 
 In your other shortcuts, replace the Text + Set Variable steps for the key with:
 
-- Action: Run Shortcut → choose **Brain Config**
+- Action: **Run Shortcut** → choose **Brain Config**
 - Use the output as the **Brain API Key** variable.
 
 ---
 
 ### Tips
 
-- **Share sheet not showing the shortcut:** On iOS 17+, shortcuts appear automatically in the share sheet's Shortcuts section — scroll down to find it. On iOS 16, go to Settings → Shortcuts → Advanced → enable **Allow Sharing Large Amounts of Data**, then open the share sheet in any app, tap **More**, and pin it.
+- **Shortcut not appearing in share sheet:** Scroll down past the standard share options — shortcuts appear in a dedicated Shortcuts section at the bottom. The shortcut must have **Get Text from Input** as its first action.
 - **No notification appears:** Check Settings → Notifications → Shortcuts → ensure notifications are allowed.
 - **"Could not connect" error:** Verify you are online and that the URL is exactly `https://open-brain-cloud.fly.dev/capture` (no trailing slash).
-- **Empty content saved:** The clipboard fallback only works when the shortcut is opened directly (not via share sheet). When sharing from an app, make sure text is actually selected before tapping Share.
+- **Empty content saved:** Make sure text is actually selected before tapping Share. The shortcut captures whatever text was passed by the sharing app.
 
 ---
 

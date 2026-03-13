@@ -109,7 +109,7 @@ Fly also provides persistent long-lived connections, which MCP's streaming trans
 
 Supabase is managed Postgres — no separate vector database to operate. `pgvector` with an HNSW index gives sub-millisecond approximate nearest-neighbor search at the scale of a personal knowledge base (tens of thousands of rows). The free tier is more than sufficient.
 
-The Supabase transaction pooler (port 6543) is required for serverless/edge deployments. The standard port 5432 uses session-mode pooling that does not work well with short-lived server processes.
+The Supabase transaction pooler (port 6543) is required for serverless/edge deployments. The standard port 5432 is the direct connection (no pooler), which exhausts Postgres connection limits quickly under concurrent or short-lived server processes.
 
 ### Voyage AI `voyage-3-lite`
 
@@ -119,7 +119,7 @@ The Supabase transaction pooler (port 6543) is required for serverless/edge depl
 
 ### OpenRouter for metadata extraction
 
-Metadata extraction (people, topics, action items) is best-effort enrichment — a failure never blocks a capture. OpenRouter provides model flexibility: if a cheaper or better model becomes available, changing one environment variable is all that is needed. The current default is `claude-haiku-4` via OpenRouter.
+Metadata extraction (people, topics, action items) is best-effort enrichment — a failure never blocks a capture. OpenRouter provides model flexibility: if a cheaper or better model becomes available, the model identifier can be changed in `src/services/openrouter.ts` and redeployed. The current model is `anthropic/claude-haiku-4` via OpenRouter.
 
 ---
 
@@ -129,9 +129,9 @@ Metadata extraction (people, topics, action items) is best-effort enrichment —
 
 The Supabase transaction pooler connection string uses a dotted username format: `postgres.[project-ref]`. The standard `pg` URL parser treats the dot as a host separator. The server parses the connection string manually to preserve the full username before constructing the `Pool` config, avoiding silent connection failures.
 
-### stdio proxy for local development
+### stdio proxy for Claude Desktop
 
-Claude Code's MCP client communicates over stdio by default. During local development, a lightweight proxy bridges the stdio transport to the HTTP server's `/mcp` endpoint. This allows testing with a real Claude client without deploying.
+Claude Desktop only supports stdio MCP servers, not HTTP. The `proxy/stdio-proxy.ts` bridge is the required production path for Claude Desktop users — it forwards stdio ↔ the remote HTTP `/mcp` endpoint transparently. The same proxy can also be used during local development to test with a real Claude Desktop client.
 
 ### Input validation on `/capture`
 

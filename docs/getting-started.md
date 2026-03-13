@@ -157,10 +157,10 @@ Claude Desktop only supports stdio MCP servers, not HTTP. Use the bundled `proxy
 
 Replace `/path/to/node` with the absolute path to your Node.js binary (e.g., `~/.asdf/installs/nodejs/22.2.0/bin/node`). Claude Desktop uses a stripped PATH — asdf/nvm shims are not visible; you must use the absolute install path.
 
-Compile the proxy first if you have not already:
+Compile the proxy first if you have not already (run from the repo root):
 
 ```bash
-cd proxy && npm install && npx tsc
+npm run build:proxy
 ```
 
 ### claude.ai (browser and mobile)
