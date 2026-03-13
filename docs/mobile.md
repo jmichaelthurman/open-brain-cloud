@@ -86,17 +86,20 @@ Add these action blocks in order:
 
 #### Step 4 — Send to Open Brain Cloud
 
+> **Important — use Form, not JSON.** When the request body type is set to JSON, iOS Shortcuts silently fails to substitute variables: the `content` field arrives empty or as a raw variable token instead of the captured text. Set the body type to **Form** to avoid this.
+
 - Action: **Get Contents of URL**
   - URL: `https://open-brain-cloud.fly.dev/capture`
   - Tap **Show More** → Method: **POST**
-  - Request Body: **JSON** → tap **Add new field**:
+  - Request Body: **Form** → tap **Add new field**:
     - Key: `content` → Value: variable **Captured Text**
     - Key: `source` → Value: text `ios-shortcut`
   - Headers → tap **Add new header**:
     - Key: `Authorization` → Value: variable **Auth Header**
-    - Key: `Content-Type` → Value: text `application/json`
 
-#### Step 5 — Success notification
+  Shortcuts automatically sets `Content-Type: application/x-www-form-urlencoded` when Form is selected. Do not add a Content-Type header manually — it will conflict.
+
+#### Step 5 — Confirm success
 
 - Action: **Show Notification**
   - Title: `Open Brain`
@@ -127,15 +130,18 @@ Open the **Shortcuts** app, tap **+**, and name it **Quick Brain Capture**.
 
 #### Step 4 — POST to the capture endpoint
 
+> **Important — use Form, not JSON.** Same constraint as the share sheet shortcut: the body type must be **Form** or variable substitution silently breaks.
+
 - Action: **Get Contents of URL**
   - URL: `https://open-brain-cloud.fly.dev/capture`
   - Tap **Show More** → Method: **POST**
-  - Request Body: **JSON** → tap **Add new field**:
+  - Request Body: **Form** → tap **Add new field**:
     - Key: `content` → Value: variable **Captured Text**
     - Key: `source` → Value: text `ios-shortcut`
   - Headers → tap **Add new header**:
     - Key: `Authorization` → Value: variable **Auth Header**
-    - Key: `Content-Type` → Value: text `application/json`
+
+  Do not add a `Content-Type` header — Shortcuts sets it automatically to `application/x-www-form-urlencoded` when Form is selected.
 
 #### Step 5 — Notify on success
 
@@ -168,6 +174,53 @@ In your other shortcuts, replace the Text + Set Variable steps for the key with:
 - **No notification appears:** Check Settings → Notifications → Shortcuts → ensure notifications are allowed.
 - **"Could not connect" error:** Verify you are online and that the URL is exactly `https://open-brain-cloud.fly.dev/capture` (no trailing slash).
 - **Empty content saved:** Make sure text is actually selected before tapping Share. The shortcut captures whatever text was passed by the sharing app.
+- **Avoid If blocks:** Conditional (If) blocks in Shortcuts cause silent failures when used around the network request — the action appears to run but the request is never sent and no error surfaces. Keep the shortcut linear with no branching logic.
+- **Body type must be Form:** Setting the request body to JSON instead of Form silently breaks variable substitution — your captured text will not reach the server. This is a non-obvious iOS Shortcuts limitation and the most common source of empty-content errors.
+
+---
+
+## Installing shortcuts programmatically (macOS + Python)
+
+Building shortcuts by hand in the Shortcuts app is tedious and error-prone. You can generate and install `.shortcut` files from a Mac using a small Python HTTP server and the `shortcuts://import-shortcut` URL scheme.
+
+### How it works
+
+1. A Python HTTP server on your Mac serves the `.shortcut` file (a binary plist).
+2. A Safari redirect on the iPhone opens `shortcuts://import-shortcut?url=http://...&name=Save+to+Open+Brain`.
+3. iOS downloads the file and imports it into the Shortcuts app with a single tap.
+
+### Steps
+
+**On your Mac:**
+
+```bash
+# Serve the shortcut file from the directory that contains it
+cd ~/path/to/shortcut-files
+python3 -m http.server 8765
+```
+
+**On your iPhone (same Wi-Fi network):**
+
+Open Safari and navigate to:
+
+```text
+http://<mac-local-ip>:8765/Save%20to%20Open%20Brain.shortcut
+```
+
+Or use the import URL scheme directly:
+
+```text
+shortcuts://import-shortcut?url=http%3A%2F%2F<mac-local-ip>%3A8765%2FSave%2520to%2520Open%2520Brain.shortcut&name=Save%20to%20Open%20Brain
+```
+
+Shortcuts will present an import dialog — tap **Add Shortcut**.
+
+### Notes
+
+- Your Mac and iPhone must be on the same Wi-Fi network (or you can use your Mac's Personal Hotspot).
+- Find your Mac's local IP with `ipconfig getifaddr en0` (Wi-Fi) or `en1` (Ethernet).
+- The `.shortcut` format is a binary plist. You can inspect or edit it with `plutil -convert xml1 <file>` on macOS to verify the `WFHTTPBodyType` key is set to `Form` before distributing.
+- The import URL scheme works on iOS 13 and later.
 
 ---
 
