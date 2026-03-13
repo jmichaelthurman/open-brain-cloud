@@ -4,6 +4,8 @@ A cloud-native MCP server for semantic knowledge capture and retrieval. Capture 
 
 **Stack:** Node.js/TypeScript · Fly.io · Supabase Postgres + pgvector · Voyage AI · OpenRouter (claude-haiku-4)
 
+**Inspiration:** Thanks to Nate (YouTube: @nate.b.jones ) for the inpiration for this project... and quite a few others. [Video](https://www.youtube.com/watch?v=0TpON5T-Sw4). Cheers!
+
 ---
 
 ## How it works
