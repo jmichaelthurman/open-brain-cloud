@@ -4,3 +4,4 @@ dist/
 *.js.map
 scratch/
 .DS_Store
+.vscode/mcp.json
