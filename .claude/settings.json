@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push --force*)",
+      "Bash(git reset --hard*)",
+      "Bash(git checkout -- .)",
+      "Bash(git clean -f*)",
+      "Bash(git branch -D*)",
+      "Bash(*AWS_SECRET*)",
+      "Bash(*AWS_ACCESS_KEY*)",
+      "Bash(*ANTHROPIC_API_KEY*)",
+      "Write(.env*)",
+      "Write(*credentials*)",
+      "Write(*secret*)"
+    ]
+  }
+}

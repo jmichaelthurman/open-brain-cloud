@@ -1,0 +1,1 @@
+../../../../../ai/claude-config/docs/skills/tofu/references/module-patterns.md

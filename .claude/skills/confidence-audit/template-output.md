@@ -1,0 +1,1 @@
+../../../../ai/claude-config/docs/skills/confidence-audit/template-output.md

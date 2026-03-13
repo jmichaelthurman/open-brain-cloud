@@ -1,0 +1,1 @@
+../../../ai/claude-config/docs/rules/commit-conventions.md

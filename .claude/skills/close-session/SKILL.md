@@ -1,0 +1,1 @@
+../../../../ai/claude-config/docs/skills/close-session/SKILL.md

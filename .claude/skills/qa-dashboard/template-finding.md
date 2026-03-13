@@ -1,0 +1,1 @@
+../../../../ai/claude-config/docs/skills/qa-dashboard/template-finding.md
