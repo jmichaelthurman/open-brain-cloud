@@ -1,7 +1,10 @@
 node_modules/
 dist/
+proxy/dist/
 .env
 *.js.map
 scratch/
 .DS_Store
 .vscode/mcp.json
+supabase/.temp/
+backfill_id_map.json
