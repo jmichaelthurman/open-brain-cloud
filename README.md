@@ -63,6 +63,8 @@ DATABASE_URL=postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supaba
 OPEN_BRAIN_API_KEY=<generate with: openssl rand -hex 32>
 VOYAGE_API_KEY=<from dash.voyageai.com>
 OPENROUTER_API_KEY=<from openrouter.ai/keys>
+SUPABASE_JWT_SECRET=<from Supabase Dashboard → Settings → API → JWT Secret>
+SERVICE_ACCOUNT_USER_ID=<UUID from service account creation — see docs/getting-started.md>
 PORT=8080
 ```
 
@@ -95,10 +97,13 @@ fly deploy
 ```
 
 ```bash
+fly secrets set \
   DATABASE_URL="..." \
   OPEN_BRAIN_API_KEY="..." \
   VOYAGE_API_KEY="..." \
-  OPENROUTER_API_KEY="..."
+  OPENROUTER_API_KEY="..." \
+  SUPABASE_JWT_SECRET="..." \
+  SERVICE_ACCOUNT_USER_ID="..."
 
 fly deploy
 ```
@@ -244,9 +249,10 @@ The script batches in groups of 10 with a 200ms delay to respect Voyage rate lim
 ```ini
 MCP Clients (Claude Code · claude.ai desktop · claude.ai mobile)
         │
-        │  HTTPS  Authorization: Bearer $OPEN_BRAIN_API_KEY
+        │  HTTPS  Authorization: Bearer <JWT or API_KEY>
         ▼
   Fly.io MCP Server  (Node.js 18+, StreamableHTTPServerTransport)
+        │  Hybrid auth: Supabase JWT → userId  |  API key → service account
         │
         ├──► Supabase Postgres  (thoughts + thought_links, pgvector HNSW)
         ├──► Voyage AI          (voyage-3-lite, 512-dim embeddings)
@@ -263,7 +269,9 @@ MCP Clients (Claude Code · claude.ai desktop · claude.ai mobile)
 
 ## Security
 
+- **Hybrid auth:** Supabase JWT tokens for browser clients, static API key for iOS Shortcuts — both return an `AuthContext` with a `userId`
 - All endpoints require `Authorization: Bearer` header — no unauthenticated access
 - `OPEN_BRAIN_API_KEY` is validated at server startup; missing key prevents boot
 - Database SSL enforced (`rejectUnauthorized: false` for Supabase pooler compatibility)
 - Secrets managed via `fly secrets` — never committed to the repo
+- `owner_id` column on `thoughts` and `thought_links` scopes data per user

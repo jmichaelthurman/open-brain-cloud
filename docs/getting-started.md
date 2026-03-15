@@ -1,7 +1,7 @@
 ---
 layout: page
-title: Getting Started
 permalink: /getting-started/
+title: Getting Started
 ---
 
 # Getting Started
@@ -36,13 +36,17 @@ npm install
 
 Create a new project at [supabase.com](https://supabase.com), then open the **SQL Editor** and run the two migration files in order.
 
-**Migration 1** — `supabase/migrations/001_schema.sql`
+__Migration 1__ — `supabase/migrations/001_schema.sql`
 
 Creates the `thoughts` table with a `vector(512)` column, an HNSW index for fast cosine similarity search, and the `search_thoughts` SQL function.
 
-**Migration 2** — `supabase/migrations/002_graph_linking.sql`
+__Migration 2__ — `supabase/migrations/002_graph_linking.sql`
 
 Creates the `thought_links` table with typed relations and cascade deletes.
+
+__Migration 3__ — `supabase/migrations/003_owner_id.sql`
+
+Adds `owner_id` (UUID FK to `auth.users`) to both `thoughts` and `thought_links`. Run Step A first (adds nullable column), then create a service account user in the Supabase SQL editor (see issue #9 Step 1), backfill existing rows with that UUID (Step B), and finally enforce NOT NULL (Step C).
 
 After running both migrations, get your connection string:
 
@@ -50,7 +54,7 @@ After running both migrations, get your connection string:
 
 The connection string looks like:
 
-```
+```sh
 postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
 ```
 
@@ -69,6 +73,8 @@ DATABASE_URL=postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supaba
 OPEN_BRAIN_API_KEY=<generate with: openssl rand -hex 32>
 VOYAGE_API_KEY=<from dash.voyageai.com>
 OPENROUTER_API_KEY=<from openrouter.ai/keys>
+SUPABASE_JWT_SECRET=<from Supabase Dashboard → Settings → API → JWT Secret>
+SERVICE_ACCOUNT_USER_ID=<UUID returned by the service account INSERT in Migration 3>
 PORT=8080
 ```
 
@@ -78,7 +84,7 @@ Generate a strong API key with:
 openssl rand -hex 32
 ```
 
-This key gates all access to your server — treat it like a password.
+`OPEN_BRAIN_API_KEY` gates access for non-browser clients (iOS Shortcuts, scripts). Browser clients authenticate with Supabase JWTs instead. Both methods are accepted — see the [Architecture](architecture) page for details.
 
 ---
 
@@ -96,7 +102,9 @@ fly secrets set \
   DATABASE_URL="postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres" \
   OPEN_BRAIN_API_KEY="<your-OPEN_BRAIN_API_KEY>" \
   VOYAGE_API_KEY="<your-VOYAGE_API_KEY>" \
-  OPENROUTER_API_KEY="<your-OPENROUTER_API_KEY>"
+  OPENROUTER_API_KEY="<your-OPENROUTER_API_KEY>" \
+  SUPABASE_JWT_SECRET="<your-SUPABASE_JWT_SECRET>" \
+  SERVICE_ACCOUNT_USER_ID="<UUID from service account creation>"
 ```
 
 Deploy:
@@ -169,7 +177,7 @@ In claude.ai, go to **Settings → Integrations → Add MCP Server** and enter:
 
 - **URL:** `https://open-brain-cloud.fly.dev/mcp`
 - **Authentication:** Bearer token
-- **Token:** `<your-OPEN_BRAIN_API_KEY>`
+- __Token:__ `<your-OPEN_BRAIN_API_KEY>`
 
 ### iOS / iPadOS via Apple Shortcuts
 
