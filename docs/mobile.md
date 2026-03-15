@@ -81,7 +81,7 @@ Add these action blocks in order:
 
 #### Step 3 — Build the Authorization header
 
-- Action: **Text** → type `Bearer ` (with a trailing space), then tap the variable picker and insert **Brain API Key**
+- Action: **Text** → type `Bearer` followed by a single space, then tap the variable picker and insert **Brain API Key**
 - Tap the result pill → **Add to Variable** → name it `Auth Header`
 
 #### Step 4 — Send to Open Brain Cloud
@@ -150,6 +150,88 @@ Open the **Shortcuts** app, tap **+**, and name it **Quick Brain Capture**.
   - Body: `Saved`
 
 Tap **Done**. To add as a home screen icon: long-press the shortcut → **Add to Home Screen**. To add as a widget: long-press the home screen → tap **+** → search Shortcuts → choose the widget size → select **Quick Brain Capture**.
+
+---
+
+### Shortcut 3: "Save Web Page to Open Brain" (Share Sheet — with content)
+
+This shortcut differs from Shortcut 1 in one important way: instead of capturing only the URL as text, it uses **Get Article from Web Page** (Safari Reader) to extract the full article body before sending. This means Open Brain receives the page's actual prose, not just its address — making search and recall far more useful for articles, blog posts, and documentation pages.
+
+An optional comment prompt lets you annotate the page before saving. Captures are tagged `source: ios-shortcut-web` so you can distinguish them from plain-text captures in `stats()`.
+
+If Safari Reader cannot parse the page (login walls, JavaScript-heavy SPAs, PDF links), the article body will be empty and only the URL and your comment will be captured — still useful for metadata extraction.
+
+Open the **Shortcuts** app, tap **+**, and name it **Save Web Page to Open Brain**.
+
+**Share sheet config:** Before adding actions, tap the shortcut name at the top → **Add Input** → choose **URLs** and **Web pages** (`WFURLContentItem`, `WFWebPageContentItem`). This makes the shortcut appear in the share sheet of Safari and other browsers.
+
+#### Step 1 — Ask for an optional comment
+
+- Action: **Ask for Input**
+  - Prompt: `Add a comment (optional)`
+  - Input Type: Text
+  - Default Answer: *(leave empty)*
+- Tap the result pill → **Add to Variable** → name it `User Comment`
+
+#### Step 2 — Get the shared URL
+
+- Action: **Get Text from Input**
+  - This processes whatever URL was passed from the share sheet.
+- Tap the result pill → **Add to Variable** → name it `Page URL`
+
+#### Step 3 — Fetch the article
+
+- Action: **Get Article from Web Page**
+  - Input: variable **Page URL**
+- Tap the result pill → **Add to Variable** → name it `Article`
+
+#### Step 4 — Extract the article body
+
+- Action: **Get Details of Articles**
+  - Get: **Body Text**
+  - From: variable **Article**
+- Tap the result pill → **Add to Variable** → name it `Article Body`
+
+#### Step 5 — Combine into one string
+
+- Action: **Text** → type the following, inserting variables from the variable picker:
+
+  ```text
+  [User Comment]
+
+  [Page URL]
+
+  [Article Body]
+  ```
+
+  (Three separate lines: the variable, a blank line, the next variable, a blank line, the last variable.)
+- Tap the result pill → **Add to Variable** → name it `Full Content`
+
+#### Step 6 — Build the Authorization header
+
+- Action: **Text** → type `Bearer` followed by a single space, then paste your API key: `<your-OPEN_BRAIN_API_KEY>`
+- Tap the result pill → **Add to Variable** → name it `Auth Header`
+
+#### Step 7 — POST to Open Brain Cloud
+
+> **Important — use Form, not JSON.** Same constraint as the other shortcuts: body type must be **Form** or variable substitution silently breaks.
+
+- Action: **Get Contents of URL**
+  - URL: `https://open-brain-cloud.fly.dev/capture`
+  - Tap **Show More** → Method: **POST**
+  - Request Body: **Form** → tap **Add new field**:
+    - Key: `content` → Value: variable **Full Content**
+    - Key: `source` → Value: text `ios-shortcut-web`
+  - Headers → tap **Add new header**:
+    - Key: `Authorization` → Value: variable **Auth Header**
+
+#### Step 8 — Confirm success
+
+- Action: **Show Notification**
+  - Title: `Open Brain`
+  - Body: `Web page saved`
+
+Tap **Done**. To test: open any article in Safari, tap the share icon → scroll to the Shortcuts section → tap **Save Web Page to Open Brain** → add an optional comment → confirm the notification appears.
 
 ---
 
