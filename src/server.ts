@@ -5,6 +5,7 @@ import { registerListRecentTool } from './tools/list_recent.js';
 import { registerLinkThoughtsTool } from './tools/link_thoughts.js';
 import { registerGetLinksTool } from './tools/get_links.js';
 import { registerStatsTool } from './tools/stats.js';
+import { registerGetThoughtTool } from './tools/get_thought.js';
 
 export function createServer(): McpServer {
   const server = new McpServer({
@@ -18,6 +19,7 @@ export function createServer(): McpServer {
   registerLinkThoughtsTool(server);
   registerGetLinksTool(server);
   registerStatsTool(server);
+  registerGetThoughtTool(server);
 
   return server;
 }
