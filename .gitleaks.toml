@@ -19,6 +19,15 @@ description = "PostgreSQL connection string with credentials"
 regex = '''postgres(?:ql)?://[^:]+:[^@]+@[^/]+/\S+'''
 tags = ["database", "connection-string"]
 
+  [rules.allowlist]
+  description = "Placeholder connection strings in docs and config examples"
+  regexes = [
+    '''postgres(?:ql)?://[^:]+:\[password\]@''',
+    '''postgres(?:ql)?://[^:]+:<[^>]+>@''',
+    '''postgres(?:ql)?://postgres\.\[project-ref\]''',
+    '''postgres(?:ql)?://postgres\.<ref>''',
+  ]
+
 [[rules]]
 id = "voyage-api-key"
 description = "Voyage AI API key"

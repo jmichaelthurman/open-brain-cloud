@@ -173,9 +173,9 @@ MCP protocol endpoint. All MCP tool calls are routed through here.
 
 **Headers required:**
 
-```html
-Authorization: Bearer
-<Supabase-JWT or OPEN_BRAIN_API_KEY> Content-Type: application/json</Supabase-JWT>
+```http
+Authorization: Bearer <Supabase-JWT or OPEN_BRAIN_API_KEY>
+Content-Type: application/json
 ```
 
 Implements the [Model Context Protocol](https://modelcontextprotocol.io) using `StreamableHTTPServerTransport`. The request body is a JSON-RPC 2.0 message.
@@ -188,9 +188,9 @@ REST capture endpoint for non-MCP clients (iOS Shortcuts, scripts, webhooks).
 
 **Headers required:**
 
-```html
-Authorization: Bearer
-<Supabase-JWT or OPEN_BRAIN_API_KEY> Content-Type: application/json</Supabase-JWT>
+```http
+Authorization: Bearer <Supabase-JWT or OPEN_BRAIN_API_KEY>
+Content-Type: application/json
 ```
 
 **Request body:**
@@ -241,7 +241,7 @@ Only `content` is required. All other fields are optional.
 - JWT detection: if `SUPABASE_JWT_SECRET` is configured and the token has 3 dot-separated segments, JWT verification is attempted first; on failure it falls through to the API key check.
 - All endpoints (except `/health`) require a valid `Authorization: Bearer` header
 - `OPEN_BRAIN_API_KEY` and `SERVICE_ACCOUNT_USER_ID` are validated at server startup — missing values prevent the process from starting
-- `owner_id` column on `thoughts` and `thought_links` scopes all data to the authenticated user
+- `owner_id` column on `thoughts` and `thought_links` is being introduced via Migration 3 to support per-user data scoping; enforcement (NOT NULL and query-level filtering by `userId`) is a follow-on step tracked in issue #9
 - Secrets are managed via `fly secrets` and injected as environment variables; they are never written to the filesystem or the repository
 - Supabase connection uses SSL (`rejectUnauthorized: false` for Supabase pooler CA compatibility)
 - The `/capture` endpoint applies strict input bounds before making any upstream API calls to prevent abuse

@@ -34,7 +34,7 @@ npm install
 
 ## Step 2 — Apply Supabase migrations
 
-Create a new project at [supabase.com](https://supabase.com), then open the **SQL Editor** and run the two migration files in order.
+Create a new project at [supabase.com](https://supabase.com), then open the **SQL Editor** and run the migration files in order.
 
 **Migration 1** — `supabase/migrations/001_schema.sql`
 
@@ -48,7 +48,7 @@ Creates the `thought_links` table with typed relations and cascade deletes.
 
 Adds `owner_id` (UUID FK to `auth.users`) to both `thoughts` and `thought_links`. Run Step A first (adds nullable column), then create a service account user in the Supabase SQL editor (see issue #9 Step 1), backfill existing rows with that UUID (Step B), and finally enforce NOT NULL (Step C).
 
-After running both migrations, get your connection string:
+After running all migrations, get your connection string:
 
 **Supabase Dashboard → Settings → Database → Connection string → Transaction pooler** (use port 6543, not 5432)
 

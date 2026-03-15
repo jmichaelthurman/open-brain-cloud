@@ -9,7 +9,7 @@
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "typecheck": "tsc --noEmit",
-    "prepare": "lefthook install",
+    "prepare": "[ -d .git ] && lefthook install || true",
     "lint": "eslint src/ proxy/ scripts/",
     "lint:fix": "eslint --fix src/ proxy/ scripts/",
     "format": "prettier --write .",
