@@ -1,0 +1,23 @@
+pre-commit:
+  parallel: true
+  commands:
+    format:
+      glob: '*.{ts,json,md}'
+      run: npx prettier --write {staged_files}
+      stage_fixed: true
+
+    lint:
+      glob: '*.ts'
+      run: npx eslint --max-warnings=0 {staged_files}
+
+    secrets:
+      run: gitleaks protect --staged --config .gitleaks.toml --verbose
+
+    pii:
+      glob: '*.{ts,js,sh,json}'
+      run: bash scripts/check-pii.sh {staged_files}
+
+commit-msg:
+  commands:
+    validate:
+      run: npx commitlint --edit {1}

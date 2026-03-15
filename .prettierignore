@@ -1,0 +1,7 @@
+dist/
+proxy/dist/
+node_modules/
+supabase/.temp/
+supabase/migrations/
+*.js.map
+scratch/

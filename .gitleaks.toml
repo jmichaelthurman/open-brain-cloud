@@ -1,0 +1,26 @@
+title = "open-brain-cloud gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Key rotation script — variable name references only"
+paths = ["scripts/rotate-api-key.sh"]
+
+[[rules]]
+id = "supabase-service-role-key"
+description = "Supabase service role key"
+regex = '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[A-Za-z0-9+/=]+\.[A-Za-z0-9+/=_-]+'''
+tags = ["supabase", "jwt"]
+
+[[rules]]
+id = "postgres-connection-string"
+description = "PostgreSQL connection string with credentials"
+regex = '''postgres(?:ql)?://[^:]+:[^@]+@[^/]+/\S+'''
+tags = ["database", "connection-string"]
+
+[[rules]]
+id = "voyage-api-key"
+description = "Voyage AI API key"
+regex = '''pa-[A-Za-z0-9]{32,}'''
+tags = ["voyage", "api-key"]
