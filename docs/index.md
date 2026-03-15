@@ -42,12 +42,12 @@ MCP Clients (Claude Code · claude.ai desktop · claude.ai mobile · iOS Shortcu
 
 ## Quick links
 
-| Page | What's there |
-|------|-------------|
+| Page                               | What's there                                                       |
+| ---------------------------------- | ------------------------------------------------------------------ |
 | [Getting Started](getting-started) | Prerequisites, environment setup, Fly.io deploy, MCP client config |
-| [Architecture](architecture) | Component deep-dive, design decisions, API reference |
-| [MCP Tools](mcp-tools) | All 6 tools with parameters, return values, and examples |
-| [Mobile Capture](mobile) | iOS Shortcuts setup, `/capture` REST endpoint |
+| [Architecture](architecture)       | Component deep-dive, design decisions, API reference               |
+| [MCP Tools](mcp-tools)             | All 6 tools with parameters, return values, and examples           |
+| [Mobile Capture](mobile)           | iOS Shortcuts setup, `/capture` REST endpoint                      |
 
 ---
 

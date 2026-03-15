@@ -12,12 +12,12 @@ Deploy your own Open Brain Cloud instance in about 5 minutes. You need a few fre
 
 ## Prerequisites
 
-| Requirement | Notes |
-|-------------|-------|
-| Node.js 22 | Check with `node --version` |
-| [Fly CLI](https://fly.io/docs/flyctl/install/) | `brew install flyctl` on macOS |
-| [Supabase account](https://supabase.com) | Free tier is sufficient |
-| [Voyage AI API key](https://dash.voyageai.com) | Free tier includes generous credits |
+| Requirement                                      | Notes                                     |
+| ------------------------------------------------ | ----------------------------------------- |
+| Node.js 22                                       | Check with `node --version`               |
+| [Fly CLI](https://fly.io/docs/flyctl/install/)   | `brew install flyctl` on macOS            |
+| [Supabase account](https://supabase.com)         | Free tier is sufficient                   |
+| [Voyage AI API key](https://dash.voyageai.com)   | Free tier includes generous credits       |
 | [OpenRouter API key](https://openrouter.ai/keys) | Fund with a few dollars; haiku-4 is cheap |
 
 ---
@@ -36,15 +36,15 @@ npm install
 
 Create a new project at [supabase.com](https://supabase.com), then open the **SQL Editor** and run the two migration files in order.
 
-__Migration 1__ — `supabase/migrations/001_schema.sql`
+**Migration 1** — `supabase/migrations/001_schema.sql`
 
 Creates the `thoughts` table with a `vector(512)` column, an HNSW index for fast cosine similarity search, and the `search_thoughts` SQL function.
 
-__Migration 2__ — `supabase/migrations/002_graph_linking.sql`
+**Migration 2** — `supabase/migrations/002_graph_linking.sql`
 
 Creates the `thought_links` table with typed relations and cascade deletes.
 
-__Migration 3__ — `supabase/migrations/003_owner_id.sql`
+**Migration 3** — `supabase/migrations/003_owner_id.sql`
 
 Adds `owner_id` (UUID FK to `auth.users`) to both `thoughts` and `thought_links`. Run Step A first (adds nullable column), then create a service account user in the Supabase SQL editor (see issue #9 Step 1), backfill existing rows with that UUID (Step B), and finally enforce NOT NULL (Step C).
 
@@ -177,7 +177,7 @@ In claude.ai, go to **Settings → Integrations → Add MCP Server** and enter:
 
 - **URL:** `https://open-brain-cloud.fly.dev/mcp`
 - **Authentication:** Bearer token
-- __Token:__ `<your-OPEN_BRAIN_API_KEY>`
+- **Token:** `<your-OPEN_BRAIN_API_KEY>`
 
 ### iOS / iPadOS via Apple Shortcuts
 

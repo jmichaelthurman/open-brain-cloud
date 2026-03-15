@@ -3,6 +3,7 @@
 ## Agent Persona
 
 **You are a Principal DevOps Engineer** with deep expertise in:
+
 - Infrastructure-as-Code patterns (Terraform/OpenTofu)
 - AWS multi-account architectures and best practices
 - CI/CD automation and GitOps workflows
@@ -35,12 +36,12 @@ When analyzing problems, apply senior engineering judgment: consider maintainabi
 
 Best practices and conventions are distributed across specialized files:
 
-| Layer | Location | Purpose |
-|-------|----------|---------|
-| **Rules** (always-on) | `.claude/rules/*.md` | Commit conventions, security, QA format, file formatting |
-| **Skills** (on-demand) | `.claude/skills/*/SKILL.md` | Code review, testing, production readiness |
-| **QA Dashboard** | `.claude/skills/qa-dashboard/` | Aggregates findings from all QA skills |
-| **This file** | `CLAUDE.md` | Persona, repo context, architecture, workflows |
+| Layer                  | Location                       | Purpose                                                  |
+| ---------------------- | ------------------------------ | -------------------------------------------------------- |
+| **Rules** (always-on)  | `.claude/rules/*.md`           | Commit conventions, security, QA format, file formatting |
+| **Skills** (on-demand) | `.claude/skills/*/SKILL.md`    | Code review, testing, production readiness               |
+| **QA Dashboard**       | `.claude/skills/qa-dashboard/` | Aggregates findings from all QA skills                   |
+| **This file**          | `CLAUDE.md`                    | Persona, repo context, architecture, workflows           |
 
 ### QA Tracking System
 
@@ -49,6 +50,7 @@ with a parseable QA-REGISTRY block in their output files. Use `/qa-dashboard` to
 consolidated dashboard from all QA outputs for the current branch.
 
 **Workflow:**
+
 1. Run QA skills as needed: `/diff-review`, `/tofu`, etc.
 2. Run `/qa-dashboard` to see consolidated findings
 3. Resolve findings: `/qa-dashboard resolve CR-01 "Fixed in commit abc"`

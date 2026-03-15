@@ -1,7 +1,7 @@
 title: Open Brain Cloud
 description: Cloud-native personal AI memory system — MCP server on Fly.io with pgvector semantic search
 theme: minima
-url: "https://jmichaelthurman.github.io"
-baseurl: "/open-brain-cloud"
+url: 'https://jmichaelthurman.github.io'
+baseurl: '/open-brain-cloud'
 github_username: jmichaelthurman
 show_excerpts: true

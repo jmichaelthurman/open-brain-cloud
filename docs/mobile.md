@@ -55,10 +55,10 @@ Apple Shortcuts can call `POST /capture` from any app's share sheet or as a home
 
 There are two shortcuts to build:
 
-| Shortcut | How you use it |
-| -------- | -------------- |
-| **Save to Open Brain** | Appears in the share sheet of any app; capture highlighted text from Claude.ai, Safari, Mail, Notes, etc. |
-| **Quick Brain Capture** | Home screen icon or widget; tap to type a thought directly |
+| Shortcut                | How you use it                                                                                            |
+| ----------------------- | --------------------------------------------------------------------------------------------------------- |
+| **Save to Open Brain**  | Appears in the share sheet of any app; capture highlighted text from Claude.ai, Safari, Mail, Notes, etc. |
+| **Quick Brain Capture** | Home screen icon or widget; tap to type a thought directly                                                |
 
 ---
 

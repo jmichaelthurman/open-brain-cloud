@@ -73,32 +73,32 @@ MCP Clients (Claude Code · claude.ai desktop · claude.ai mobile · iOS Shortcu
 
 ### `thoughts`
 
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | UUID | Primary key, `gen_random_uuid()` |
-| `content` | TEXT | The captured text |
-| `embedding` | vector(512) | Voyage AI voyage-3-lite embedding |
-| `people` | TEXT[] | Extracted + explicit people mentions |
-| `topics` | TEXT[] | Extracted + explicit topic tags |
-| `action_items` | TEXT[] | Extracted + explicit action items |
-| `source` | TEXT | Origin label (e.g. `claude-code`, `ios-shortcut`) |
-| `owner_id` | UUID | FK → `auth.users(id)`, NOT NULL — scopes data per user |
-| `created_at` | TIMESTAMPTZ | Auto-set on insert |
+| Column         | Type        | Notes                                                  |
+| -------------- | ----------- | ------------------------------------------------------ |
+| `id`           | UUID        | Primary key, `gen_random_uuid()`                       |
+| `content`      | TEXT        | The captured text                                      |
+| `embedding`    | vector(512) | Voyage AI voyage-3-lite embedding                      |
+| `people`       | TEXT[]      | Extracted + explicit people mentions                   |
+| `topics`       | TEXT[]      | Extracted + explicit topic tags                        |
+| `action_items` | TEXT[]      | Extracted + explicit action items                      |
+| `source`       | TEXT        | Origin label (e.g. `claude-code`, `ios-shortcut`)      |
+| `owner_id`     | UUID        | FK → `auth.users(id)`, NOT NULL — scopes data per user |
+| `created_at`   | TIMESTAMPTZ | Auto-set on insert                                     |
 
 HNSW index: `m=16, ef_construction=64`, cosine distance operator.
 
 ### `thought_links`
 
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | UUID | Primary key |
-| `from_id` | UUID | FK → thoughts, CASCADE DELETE |
-| `to_id` | UUID | FK → thoughts, CASCADE DELETE |
-| `relation` | TEXT | One of 7 enum values (see below) |
-| `note` | TEXT | Optional edge annotation |
-| `is_manual` | BOOLEAN | `true` when confirmed by a human |
-| `owner_id` | UUID | FK → `auth.users(id)`, NOT NULL — scopes data per user |
-| `created_at` | TIMESTAMPTZ | Auto-set on insert |
+| Column       | Type        | Notes                                                  |
+| ------------ | ----------- | ------------------------------------------------------ |
+| `id`         | UUID        | Primary key                                            |
+| `from_id`    | UUID        | FK → thoughts, CASCADE DELETE                          |
+| `to_id`      | UUID        | FK → thoughts, CASCADE DELETE                          |
+| `relation`   | TEXT        | One of 7 enum values (see below)                       |
+| `note`       | TEXT        | Optional edge annotation                               |
+| `is_manual`  | BOOLEAN     | `true` when confirmed by a human                       |
+| `owner_id`   | UUID        | FK → `auth.users(id)`, NOT NULL — scopes data per user |
+| `created_at` | TIMESTAMPTZ | Auto-set on insert                                     |
 
 Unique constraint: `(from_id, to_id, relation)` — prevents duplicate edges of the same type.
 
@@ -162,7 +162,7 @@ Liveness probe. No authentication required.
 **Response 200:**
 
 ```json
-{"ok": true}
+{ "ok": true }
 ```
 
 ---
@@ -174,8 +174,8 @@ MCP protocol endpoint. All MCP tool calls are routed through here.
 **Headers required:**
 
 ```html
-Authorization: Bearer <Supabase-JWT or OPEN_BRAIN_API_KEY>
-Content-Type: application/json
+Authorization: Bearer
+<Supabase-JWT or OPEN_BRAIN_API_KEY> Content-Type: application/json</Supabase-JWT>
 ```
 
 Implements the [Model Context Protocol](https://modelcontextprotocol.io) using `StreamableHTTPServerTransport`. The request body is a JSON-RPC 2.0 message.
@@ -189,8 +189,8 @@ REST capture endpoint for non-MCP clients (iOS Shortcuts, scripts, webhooks).
 **Headers required:**
 
 ```html
-Authorization: Bearer <Supabase-JWT or OPEN_BRAIN_API_KEY>
-Content-Type: application/json
+Authorization: Bearer
+<Supabase-JWT or OPEN_BRAIN_API_KEY> Content-Type: application/json</Supabase-JWT>
 ```
 
 **Request body:**
@@ -224,12 +224,12 @@ Only `content` is required. All other fields are optional.
 
 **Error responses:**
 
-| Status | Condition |
-|--------|-----------|
-| 400 | Missing or empty `content`, invalid JSON, content too long |
-| 401 | Missing or invalid `Authorization` header |
-| 413 | Request body exceeds 1 MB |
-| 415 | `Content-Type` is not `application/json` |
+| Status | Condition                                                  |
+| ------ | ---------------------------------------------------------- |
+| 400    | Missing or empty `content`, invalid JSON, content too long |
+| 401    | Missing or invalid `Authorization` header                  |
+| 413    | Request body exceeds 1 MB                                  |
+| 415    | `Content-Type` is not `application/json`                   |
 
 ---
 
