@@ -9,7 +9,11 @@ const JWT_SECRET = process.env.SUPABASE_JWT_SECRET
   ? new TextEncoder().encode(process.env.SUPABASE_JWT_SECRET)
   : null;
 const API_KEY = process.env.OPEN_BRAIN_API_KEY;
-const SERVICE_ACCOUNT_USER_ID = process.env.SERVICE_ACCOUNT_USER_ID ?? '';
+
+if (!process.env.SERVICE_ACCOUNT_USER_ID) {
+  throw new Error('SERVICE_ACCOUNT_USER_ID environment variable is required');
+}
+const SERVICE_ACCOUNT_USER_ID = process.env.SERVICE_ACCOUNT_USER_ID;
 
 export interface AuthContext {
   userId: string;
@@ -39,8 +43,8 @@ export async function authenticate(req: IncomingMessage): Promise<AuthContext | 
   const match = (req.headers['authorization'] ?? '').match(/^bearer\s+(.+)$/i);
   if (!match) return null;
   const token = match[1];
-  // JWTs are always >100 chars; static API keys are shorter
-  if (token.length > 100) {
+  // Attempt JWT verification whenever a secret is configured; fall back to API key
+  if (JWT_SECRET && token.split('.').length === 3) {
     const jwt = await tryJwt(token);
     if (jwt) return jwt;
   }
