@@ -6,7 +6,7 @@ permalink: /mcp-tools/
 
 # MCP Tools Reference
 
-Open Brain Cloud exposes 6 tools over the MCP protocol. All tools are available to any MCP client that connects to `https://open-brain-cloud.fly.dev/mcp` with a valid `Authorization: Bearer` header.
+Open Brain Cloud exposes 7 tools over the MCP protocol. All tools are available to any MCP client that connects to `https://open-brain-cloud.fly.dev/mcp` with a valid `Authorization: Bearer` header.
 
 ---
 
@@ -18,6 +18,7 @@ Open Brain Cloud exposes 6 tools over the MCP protocol. All tools are available 
 | [`search_thoughts`](#search_thoughts) | Semantic vector search across all captured thoughts |
 | [`list_recent`](#list_recent) | List the most recently captured thoughts |
 | [`link_thoughts`](#link_thoughts) | Create a typed directional link between two thoughts |
+| [`get_thought`](#get_thought) | Fetch a single thought by its UUID |
 | [`get_links`](#get_links) | Retrieve all thoughts linked to a given thought |
 | [`stats`](#stats) | Get aggregate statistics |
 
@@ -188,6 +189,47 @@ link_thoughts(
 ```
 
 The unique constraint `(from_id, to_id, relation)` prevents duplicate edges of the same type — calling `link_thoughts` twice with the same IDs and relation is safe.
+
+---
+
+## `get_thought`
+
+Fetch a single thought by its UUID. Used internally by `get_links` for result hydration and by the Lambda scheduler for fetching specific records; also useful for direct ID lookups from any client.
+
+### Parameters
+
+| Parameter | Type | Required | Default | Description                   |
+|-----------|------|----------|---------|-------------------------------|
+| `id`      | UUID | Yes      | —       | UUID of the thought to fetch  |
+
+### Return value
+
+Full thought object:
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "content": "Decided to switch to Voyage AI embeddings...",
+  "people": [],
+  "topics": ["embeddings", "architecture"],
+  "action_items": ["update README with model rationale"],
+  "source": "claude-code",
+  "created_at": "2025-03-10T14:22:00Z"
+}
+```
+
+### Error behavior
+
+| Condition            | Response                                                               |
+|----------------------|------------------------------------------------------------------------|
+| UUID not found in DB | `isError: true` with message `"Thought not found: {id}"`               |
+| Invalid UUID format  | Zod rejects the input before the query reaches the database            |
+
+### Example
+
+```
+get_thought(id: "550e8400-e29b-41d4-a716-446655440000")
+```
 
 ---
 

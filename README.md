@@ -187,6 +187,18 @@ __Relation types:__ `related` · `supports` · `contradicts` · `follows_from` �
 
 ---
 
+### `get_thought`
+
+Fetch a single thought by its UUID.
+
+| Parameter | Type | Required | Description          |
+|-----------|------|----------|----------------------|
+| `id`      | UUID | Yes      | Thought ID to fetch  |
+
+Returns: full thought object — `id`, `content`, `people`, `topics`, `action_items`, `source`, `created_at`.
+
+---
+
 ### `get_links`
 
 Retrieve all thoughts linked to a given thought.
