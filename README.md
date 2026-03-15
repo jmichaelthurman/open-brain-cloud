@@ -141,13 +141,13 @@ Add to your Claude MCP config (`~/.claude/claude_desktop_config.json` or `.mcp.j
 
 Save a thought, decision, or note with automatic embedding and metadata extraction.
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `content` | string | ✓ | The thought or note to capture |
-| `people` | string[] | | People mentioned (merged with extracted) |
-| `topics` | string[] | | Topic tags (merged with extracted) |
-| `action_items` | string[] | | Action items (merged with extracted) |
-| `source` | string | | Source label (default: `claude-code`) |
+| Parameter      | Type     | Required | Description                              |
+| -------------- | -------- | -------- | ---------------------------------------- |
+| `content`      | string   | ✓        | The thought or note to capture           |
+| `people`       | string[] |          | People mentioned (merged with extracted) |
+| `topics`       | string[] |          | Topic tags (merged with extracted)       |
+| `action_items` | string[] |          | Action items (merged with extracted)     |
+| `source`       | string   |          | Source label (default: `claude-code`)    |
 
 Returns: `{ id, suggested_links[] }` — suggested_links are semantically similar thoughts for you to link manually.
 
@@ -157,11 +157,11 @@ Returns: `{ id, suggested_links[] }` — suggested_links are semantically simila
 
 Semantic vector search across all captured thoughts.
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `query` | string | — | Natural language search query |
-| `limit` | number | `5` | Max results (1–20) |
-| `threshold` | number | `0.3` | Minimum similarity score (0–1) |
+| Parameter   | Type   | Default | Description                    |
+| ----------- | ------ | ------- | ------------------------------ |
+| `query`     | string | —       | Natural language search query  |
+| `limit`     | number | `5`     | Max results (1–20)             |
+| `threshold` | number | `0.3`   | Minimum similarity score (0–1) |
 
 Returns: array of thoughts ranked by cosine similarity, each with a `similarity` score.
 
@@ -171,9 +171,9 @@ Returns: array of thoughts ranked by cosine similarity, each with a `similarity`
 
 List the most recently captured thoughts.
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `limit` | number | `10` | Number to return (1–50) |
+| Parameter | Type   | Default | Description             |
+| --------- | ------ | ------- | ----------------------- |
+| `limit`   | number | `10`    | Number to return (1–50) |
 
 ---
 
@@ -181,14 +181,26 @@ List the most recently captured thoughts.
 
 Create a typed directional link between two thoughts.
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `from_id` | UUID | ✓ | Source thought ID |
-| `to_id` | UUID | ✓ | Target thought ID |
-| `relation` | enum | ✓ | See relation types below |
-| `note` | string | | Optional edge annotation |
+| Parameter  | Type   | Required | Description              |
+| ---------- | ------ | -------- | ------------------------ |
+| `from_id`  | UUID   | ✓        | Source thought ID        |
+| `to_id`    | UUID   | ✓        | Target thought ID        |
+| `relation` | enum   | ✓        | See relation types below |
+| `note`     | string |          | Optional edge annotation |
 
-__Relation types:__ `related` · `supports` · `contradicts` · `follows_from` · `part_of` · `example_of` · `references`
+**Relation types:** `related` · `supports` · `contradicts` · `follows_from` · `part_of` · `example_of` · `references`
+
+---
+
+### `get_thought`
+
+Fetch a single thought by its UUID.
+
+| Parameter | Type | Required | Description         |
+| --------- | ---- | -------- | ------------------- |
+| `id`      | UUID | Yes      | Thought ID to fetch |
+
+Returns: full thought object — `id`, `content`, `people`, `topics`, `action_items`, `source`, `created_at`.
 
 ---
 
@@ -196,10 +208,10 @@ __Relation types:__ `related` · `supports` · `contradicts` · `follows_from` �
 
 Retrieve all thoughts linked to a given thought.
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `id` | UUID | — | Thought ID |
-| `direction` | `from\|to\|both` | `both` | Link direction to traverse |
+| Parameter   | Type             | Default | Description                |
+| ----------- | ---------------- | ------- | -------------------------- |
+| `id`        | UUID             | —       | Thought ID                 |
+| `direction` | `from\|to\|both` | `both`  | Link direction to traverse |
 
 Returns: array of links, each including the `linked_thought` object.
 

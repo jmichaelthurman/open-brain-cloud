@@ -2,10 +2,12 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { getPool } from '../services/db.js';
 
 export function registerStatsTool(server: McpServer): void {
-  server.tool(
+  server.registerTool(
     'stats',
-    'Get Open Brain statistics: total thoughts, links, and breakdown by source.',
-    {},
+    {
+      description: 'Get Open Brain statistics: total thoughts, links, and breakdown by source.',
+      inputSchema: {},
+    },
     async () => {
       const pool = getPool();
 
