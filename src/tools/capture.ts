@@ -5,21 +5,21 @@ import { extractMetadata } from '../services/openrouter.js';
 import { insertThought, searchByEmbedding } from '../services/db.js';
 
 export function registerCaptureTool(server: McpServer): void {
-  server.tool(
+  server.registerTool(
     'capture_thought',
-    'Save a thought, decision, or note to Open Brain with semantic embeddings and metadata extraction.',
     {
-      content: z.string().min(1).describe('The thought or note to capture'),
-      people: z.array(z.string()).optional().describe('People mentioned'),
-      topics: z.array(z.string()).optional().describe('Topic tags'),
-      action_items: z.array(z.string()).optional().describe('Action items'),
-      source: z.string().optional().default('claude-code').describe('Source of the thought'),
+      description:
+        'Save a thought, decision, or note to Open Brain with semantic embeddings and metadata extraction.',
+      inputSchema: {
+        content: z.string().min(1).describe('The thought or note to capture'),
+        people: z.array(z.string()).optional().describe('People mentioned'),
+        topics: z.array(z.string()).optional().describe('Topic tags'),
+        action_items: z.array(z.string()).optional().describe('Action items'),
+        source: z.string().optional().default('claude-code').describe('Source of the thought'),
+      },
     },
     async ({ content, people, topics, action_items, source }) => {
-      const [embedding, extracted] = await Promise.all([
-        embed(content),
-        extractMetadata(content),
-      ]);
+      const [embedding, extracted] = await Promise.all([embed(content), extractMetadata(content)]);
 
       // Merge: explicit values first, then extracted (no dupes)
       const merge = (explicit: string[] | undefined, extracted: string[]): string[] => {
@@ -38,7 +38,7 @@ export function registerCaptureTool(server: McpServer): void {
         people: mergedPeople,
         topics: mergedTopics,
         action_items: mergedActions,
-        source: source ?? 'claude-code',
+        source,
       });
 
       const similar = await searchByEmbedding(embedding, 5, 0.5);

@@ -3,10 +3,12 @@ import { z } from 'zod';
 import { getPool } from '../services/db.js';
 
 export function registerGetThoughtTool(server: McpServer): void {
-  server.tool(
+  server.registerTool(
     'get_thought',
-    'Fetch a single thought by its UUID',
-    { id: z.string().uuid('id must be a valid UUID') },
+    {
+      description: 'Fetch a single thought by its UUID',
+      inputSchema: { id: z.uuid().describe('UUID of the thought to fetch') },
+    },
     async ({ id }) => {
       const pool = getPool();
       const result = await pool.query(

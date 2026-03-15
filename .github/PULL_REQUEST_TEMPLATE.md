@@ -3,6 +3,7 @@
 ## Test plan
 
 ## Checklist
+
 - [ ] Acceptance criteria from linked issue met
 - [ ] If MCP tools added or changed: `docs/mcp-tools.md` updated
 - [ ] If REST endpoints added or changed: `docs/architecture.md` updated

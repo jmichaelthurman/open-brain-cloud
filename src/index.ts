@@ -1,13 +1,13 @@
 import 'dotenv/config';
 import http from 'node:http';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { validateApiKey } from './auth.js';
+import { authenticate } from './auth.js';
 import { createServer } from './server.js';
 import { handleRestCapture } from './routes/capture.js';
 
 const PORT = parseInt(process.env.PORT ?? '8080', 10);
 
-const httpServer = http.createServer((req, res) => {
+const httpServer = http.createServer(async (req, res) => {
   const url = req.url ?? '';
 
   // Health check
@@ -19,7 +19,8 @@ const httpServer = http.createServer((req, res) => {
 
   // MCP endpoint
   if (req.method === 'POST' && url === '/mcp') {
-    if (!validateApiKey(req)) {
+    const authContext = await authenticate(req);
+    if (!authContext) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Unauthorized' }));
       return;
@@ -39,7 +40,8 @@ const httpServer = http.createServer((req, res) => {
 
   // Simple REST capture (for Apple Shortcuts, webhooks, etc.)
   if (req.method === 'POST' && url === '/capture') {
-    if (!validateApiKey(req)) {
+    const authContext = await authenticate(req);
+    if (!authContext) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Unauthorized' }));
       return;

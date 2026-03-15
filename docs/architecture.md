@@ -1,7 +1,7 @@
 ---
 layout: page
-title: Architecture
 permalink: /architecture/
+title: Architecture
 ---
 
 # Architecture
@@ -12,19 +12,24 @@ A technical deep-dive into system components, design decisions, and the API surf
 
 ## System components
 
-```
+```ini
 MCP Clients (Claude Code · claude.ai desktop · claude.ai mobile · iOS Shortcuts)
         │
-        │  HTTPS  Authorization: Bearer $OPEN_BRAIN_API_KEY
+        │  HTTPS  Authorization: Bearer <JWT or API_KEY>
         ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │  Fly.io MCP Server  (Node.js/TypeScript)                        │
 │                                                                  │
-│  ┌──────────────────────┐  ┌────────────────────────────────┐   │
-│  │  /mcp endpoint       │  │  /capture endpoint (REST)      │   │
-│  │  StreamableHTTP      │  │  POST — for non-MCP clients    │   │
-│  │  ServerTransport     │  │  (iOS Shortcuts, curl, etc.)   │   │
-│  └──────────────────────┘  └────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │  Hybrid Auth (src/auth.ts)                                │   │
+│  │  JWT (Supabase) → userId   |  API key → service account   │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│  ┌──────────────────┐  ┌────────────────────────────────────┐   │
+│  │  /mcp endpoint    │  │  /capture endpoint (REST)          │   │
+│  │  StreamableHTTP   │  │  POST — for non-MCP clients        │   │
+│  │  ServerTransport  │  │  (iOS Shortcuts, curl, etc.)       │   │
+│  └──────────────────┘  └────────────────────────────────────┘   │
 │                                                                  │
 │  ┌──────────────────────────────────────────────────────────┐   │
 │  │  Tool registry (6 tools)                                 │   │
@@ -38,6 +43,7 @@ MCP Clients (Claude Code · claude.ai desktop · claude.ai mobile · iOS Shortcu
   (pgvector HNSW)       (voyage-3-lite      (claude-haiku-4
   thoughts table        512-dim embeddings) metadata extraction)
   thought_links table
+  + auth.users (Supabase Auth)
 ```
 
 ---
@@ -48,6 +54,7 @@ MCP Clients (Claude Code · claude.ai desktop · claude.ai mobile · iOS Shortcu
 2. The server fires two requests in parallel:
    - Voyage AI: embed `content` → 512-dimensional float vector
    - OpenRouter/claude-haiku-4: extract `{ people, topics, action_items }` from `content`
+
 3. Explicit metadata from the client is merged with extracted metadata (client values take precedence; extracted values fill gaps without duplication).
 4. The thought is written to Supabase: `id`, `content`, `embedding`, `people`, `topics`, `action_items`, `source`, `created_at`.
 5. A similarity search runs immediately against the new embedding at threshold 0.5 to find up to 5 existing related thoughts.
@@ -66,30 +73,32 @@ MCP Clients (Claude Code · claude.ai desktop · claude.ai mobile · iOS Shortcu
 
 ### `thoughts`
 
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | UUID | Primary key, `gen_random_uuid()` |
-| `content` | TEXT | The captured text |
-| `embedding` | vector(512) | Voyage AI voyage-3-lite embedding |
-| `people` | TEXT[] | Extracted + explicit people mentions |
-| `topics` | TEXT[] | Extracted + explicit topic tags |
-| `action_items` | TEXT[] | Extracted + explicit action items |
-| `source` | TEXT | Origin label (e.g. `claude-code`, `ios-shortcut`) |
-| `created_at` | TIMESTAMPTZ | Auto-set on insert |
+| Column         | Type        | Notes                                                  |
+| -------------- | ----------- | ------------------------------------------------------ |
+| `id`           | UUID        | Primary key, `gen_random_uuid()`                       |
+| `content`      | TEXT        | The captured text                                      |
+| `embedding`    | vector(512) | Voyage AI voyage-3-lite embedding                      |
+| `people`       | TEXT[]      | Extracted + explicit people mentions                   |
+| `topics`       | TEXT[]      | Extracted + explicit topic tags                        |
+| `action_items` | TEXT[]      | Extracted + explicit action items                      |
+| `source`       | TEXT        | Origin label (e.g. `claude-code`, `ios-shortcut`)      |
+| `owner_id`     | UUID        | FK → `auth.users(id)`, NOT NULL — scopes data per user |
+| `created_at`   | TIMESTAMPTZ | Auto-set on insert                                     |
 
 HNSW index: `m=16, ef_construction=64`, cosine distance operator.
 
 ### `thought_links`
 
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | UUID | Primary key |
-| `from_id` | UUID | FK → thoughts, CASCADE DELETE |
-| `to_id` | UUID | FK → thoughts, CASCADE DELETE |
-| `relation` | TEXT | One of 7 enum values (see below) |
-| `note` | TEXT | Optional edge annotation |
-| `is_manual` | BOOLEAN | `true` when confirmed by a human |
-| `created_at` | TIMESTAMPTZ | Auto-set on insert |
+| Column       | Type        | Notes                                                  |
+| ------------ | ----------- | ------------------------------------------------------ |
+| `id`         | UUID        | Primary key                                            |
+| `from_id`    | UUID        | FK → thoughts, CASCADE DELETE                          |
+| `to_id`      | UUID        | FK → thoughts, CASCADE DELETE                          |
+| `relation`   | TEXT        | One of 7 enum values (see below)                       |
+| `note`       | TEXT        | Optional edge annotation                               |
+| `is_manual`  | BOOLEAN     | `true` when confirmed by a human                       |
+| `owner_id`   | UUID        | FK → `auth.users(id)`, NOT NULL — scopes data per user |
+| `created_at` | TIMESTAMPTZ | Auto-set on insert                                     |
 
 Unique constraint: `(from_id, to_id, relation)` — prevents duplicate edges of the same type.
 
@@ -151,8 +160,9 @@ The REST endpoint applies layered input validation before any upstream API calls
 Liveness probe. No authentication required.
 
 **Response 200:**
+
 ```json
-{"ok": true}
+{ "ok": true }
 ```
 
 ---
@@ -162,8 +172,9 @@ Liveness probe. No authentication required.
 MCP protocol endpoint. All MCP tool calls are routed through here.
 
 **Headers required:**
-```
-Authorization: Bearer <your-OPEN_BRAIN_API_KEY>
+
+```http
+Authorization: Bearer <Supabase-JWT or OPEN_BRAIN_API_KEY>
 Content-Type: application/json
 ```
 
@@ -176,12 +187,14 @@ Implements the [Model Context Protocol](https://modelcontextprotocol.io) using `
 REST capture endpoint for non-MCP clients (iOS Shortcuts, scripts, webhooks).
 
 **Headers required:**
-```
-Authorization: Bearer <your-OPEN_BRAIN_API_KEY>
+
+```http
+Authorization: Bearer <Supabase-JWT or OPEN_BRAIN_API_KEY>
 Content-Type: application/json
 ```
 
 **Request body:**
+
 ```json
 {
   "content": "The thought or note to capture",
@@ -195,6 +208,7 @@ Content-Type: application/json
 Only `content` is required. All other fields are optional.
 
 **Response 200:**
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -210,19 +224,24 @@ Only `content` is required. All other fields are optional.
 
 **Error responses:**
 
-| Status | Condition |
-|--------|-----------|
-| 400 | Missing or empty `content`, invalid JSON, content too long |
-| 401 | Missing or invalid `Authorization` header |
-| 413 | Request body exceeds 1 MB |
-| 415 | `Content-Type` is not `application/json` |
+| Status | Condition                                                  |
+| ------ | ---------------------------------------------------------- |
+| 400    | Missing or empty `content`, invalid JSON, content too long |
+| 401    | Missing or invalid `Authorization` header                  |
+| 413    | Request body exceeds 1 MB                                  |
+| 415    | `Content-Type` is not `application/json`                   |
 
 ---
 
 ## Security
 
+- **Hybrid authentication:** The server accepts two credential types via `Authorization: Bearer`:
+  - **Supabase JWT** — verified with `jose` using `SUPABASE_JWT_SECRET`. Returns `AuthContext` with the JWT `sub` claim as `userId` and `authMethod: 'jwt'`.
+  - **Static API key** (`OPEN_BRAIN_API_KEY`) — maps to `SERVICE_ACCOUNT_USER_ID`. Returns `AuthContext` with `authMethod: 'api_key'` and `isServiceAccount: true`. This path exists permanently for iOS Shortcuts and scripts that cannot complete OAuth flows.
+- JWT detection: if `SUPABASE_JWT_SECRET` is configured and the token has 3 dot-separated segments, JWT verification is attempted first; on failure it falls through to the API key check.
 - All endpoints (except `/health`) require a valid `Authorization: Bearer` header
-- `OPEN_BRAIN_API_KEY` is validated at server startup — a missing key prevents the process from starting
+- `OPEN_BRAIN_API_KEY` and `SERVICE_ACCOUNT_USER_ID` are validated at server startup — missing values prevent the process from starting
+- `owner_id` column on `thoughts` and `thought_links` is being introduced via Migration 3 to support per-user data scoping; enforcement (NOT NULL and query-level filtering by `userId`) is a follow-on step tracked in issue #9
 - Secrets are managed via `fly secrets` and injected as environment variables; they are never written to the filesystem or the repository
 - Supabase connection uses SSL (`rejectUnauthorized: false` for Supabase pooler CA compatibility)
 - The `/capture` endpoint applies strict input bounds before making any upstream API calls to prevent abuse
